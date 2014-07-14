@@ -1,0 +1,54 @@
+#!/usr/bin/python
+
+from gi.repository import Gtk
+from gi.repository import WebKit
+import sys
+
+# set default resolution 800x600
+defaultxres = 800
+defaultyres = 600
+
+# check syntax
+if len(sys.argv) < 2:
+  print("Usage: sswb url [title]")
+  sys.exit()
+
+# check if title is passed from command line
+if len(sys.argv) > 2:
+  start = 2
+  titolo = ""
+  while (start < len(sys.argv)):
+    titolo = titolo + str(sys.argv[start]) + " "
+    start = start + 1
+  titolo = titolo[:-1]
+else:
+  titolo = "Stupid Simply Web Browser"
+
+# read url from commandline
+url = str(sys.argv[1])
+# check if url start with something:// else add http://
+if url.find("://") <= 2:
+  url = "http://" + url
+  
+if str(sys.argv[2]
+  
+Class StupidSimplyWebBrowserWindow(Gtk.Window):
+  
+  def __init__(self, iltitolo, sizex, sizey):
+    Gtk.Window.__init__(self, title=iltitolo)
+    self.set_default_size(sizex, sizey)
+    self.scroller = Gtk.ScrolledWindow()
+    self.web = WebKit.WebView()
+    self.scroller.add(self.web)
+    self.add(self.scroller)
+  
+  def goto(self, theurl):
+    self.web.open(theurl)
+    
+win = StupidSimplyWebBrowserWindow(titolo, defaultxres, defaultyres)
+win.goto(url)
+win.connect('delete-event', Gtk.main_quit)
+
+win.show_all()
+Gt.main()
+
