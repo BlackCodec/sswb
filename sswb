@@ -30,9 +30,10 @@ url = str(sys.argv[1])
 if url.find("://") <= 2:
   url = "http://" + url
   
-if str(sys.argv[2]
+if len(sys.argv) > 2:
+	titolo = str(sys.argv[2])
   
-Class StupidSimplyWebBrowserWindow(Gtk.Window):
+class StupidSimplyWebBrowserWindow(Gtk.Window):
   
   def __init__(self, iltitolo, sizex, sizey):
     Gtk.Window.__init__(self, title=iltitolo)
@@ -41,7 +42,7 @@ Class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.web = WebKit.WebView()
     self.scroller.add(self.web)
     self.add(self.scroller)
-  
+      
   def goto(self, theurl):
     self.web.open(theurl)
     
@@ -50,5 +51,5 @@ win.goto(url)
 win.connect('delete-event', Gtk.main_quit)
 
 win.show_all()
-Gt.main()
+Gtk.main()
 
