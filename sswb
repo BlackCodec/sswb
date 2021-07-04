@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('WebKit2', '4.0')
+
 from gi.repository import Gtk
-from gi.repository import WebKit
+from gi.repository import WebKit2
 import sys
 
 # set default resolution 800x600
@@ -28,7 +32,7 @@ else:
 url = str(sys.argv[1])
 # check if url start with something:// else add http://
 if url.find("://") <= 2:
-  url = "http://" + url
+  url = "https://" + url
   
 if len(sys.argv) > 2:
 	titolo = str(sys.argv[2])
@@ -39,12 +43,12 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     Gtk.Window.__init__(self, title=iltitolo)
     self.set_default_size(sizex, sizey)
     self.scroller = Gtk.ScrolledWindow()
-    self.web = WebKit.WebView()
+    self.web = WebKit2.WebView()
     self.scroller.add(self.web)
     self.add(self.scroller)
       
   def goto(self, theurl):
-    self.web.open(theurl)
+    self.web.load_uri(theurl)
     
 win = StupidSimplyWebBrowserWindow(titolo, defaultxres, defaultyres)
 win.goto(url)
@@ -52,4 +56,3 @@ win.connect('delete-event', Gtk.main_quit)
 
 win.show_all()
 Gtk.main()
-

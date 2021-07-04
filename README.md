@@ -6,6 +6,6 @@ Stupid Simply Web Browser - A simply gtk web browser
 
 =====
 
-Usage: sswb theurltoopen
+Usage: sswb url_to_open
 
-Example: sswb http://www.underatrain.tk
+Example: sswb http://www.icapito.it
