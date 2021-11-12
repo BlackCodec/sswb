@@ -9,6 +9,7 @@ Stupid Simply Web Browser - A simply gtk web browser
 Usage: sswb url_to_open <title>
 
 Example: sswb http://www.icapito.it 
+  
 Example: sswb http://www.icapito.it iCapito
 
 =====
