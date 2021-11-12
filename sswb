@@ -1,12 +1,17 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
+gi.require_version('Notify', '0.7')
 
 from gi.repository import Gtk
 from gi.repository import WebKit2
-import sys
+from gi.repository import GLib
+from gi.repository import Notify
+from gi.repository import Gdk
+
+import sys,os, urllib.request
 
 # set default resolution 800x600
 defaultxres = 800
@@ -38,21 +43,80 @@ if len(sys.argv) > 2:
 	titolo = str(sys.argv[2])
   
 class StupidSimplyWebBrowserWindow(Gtk.Window):
+  miotitolo="StupidSimplyWebBrowser"  
   
   def __init__(self, iltitolo, sizex, sizey):
     Gtk.Window.__init__(self, title=iltitolo)
+    self.miotitolo=iltitolo
     self.set_default_size(sizex, sizey)
     self.scroller = Gtk.ScrolledWindow()
     self.web = WebKit2.WebView()
+    self.web.connect('decide-policy', self.policy_decision_requested)
+    self.web.connect('load-changed', self.loaded)
     self.scroller.add(self.web)
     self.add(self.scroller)
+    self.connect('delete-event', Gtk.main_quit)
+    self.connect("key-press-event",self.premuto)
+    self.show_all()
+  
+  def premuto(self,widget,event):
+    keyval = event.keyval
+    keyval_name = Gdk.keyval_name(keyval)
+    ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+    if keyval_name == "F5":
+      self.web.reload()
       
   def goto(self, theurl):
     self.web.load_uri(theurl)
-    
+  
+  def loaded(self, view, event):
+    if event == WebKit2.LoadEvent.FINISHED:
+      self.set_title(self.web.get_title())
+  
+  def policy_decision_requested(self,view, decision, decisionType):
+    if decisionType == WebKit2.PolicyDecisionType.RESPONSE:
+      current_request = decision.get_request()
+      current_url = current_request.get_uri()
+      url_arr = current_url.split('/')
+      filename = url_arr[len(url_arr)-1]
+      filename_arr = filename.split('.')
+      if len(filename_arr) == 1:
+        return
+      estensione = filename_arr[len(filename_arr)-1]
+      if current_url.endswith('.html') or current_url.endswith('.php') or current_url.endswith('.htm') or len(estensione) > 5:
+        return
+      else:
+        self.download_requested(view ,current_request)
+    if decisionType == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
+      return
+
+  def download_requested(self,view, download):
+    url_arr = download.get_uri().split('/')
+    name = url_arr[len(url_arr)-1]
+    if len(name) < 3:
+      return
+    temp = name.split('.')
+    ext = temp[len(temp)-1]
+    baseName = name[0:0-len(ext)-1]
+    nameKo = True
+    contatore = 0
+    Notify.init(self.miotitolo)
+    while nameKo:
+      path = os.path.join(
+        GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),
+        name
+      )
+      if os.path.exists(path):
+        name =  baseName + "." + str(contatore) + "." + ext
+        contatore +=1 
+      else:
+        nameKo = False
+    Notify.Notification.new("Inizio download del file " + name).show()
+    urllib.request.urlretrieve(download.get_uri(), path)
+    Notify.Notification.new("Download completato").show()
+    return False
+
 win = StupidSimplyWebBrowserWindow(titolo, defaultxres, defaultyres)
 win.goto(url)
-win.connect('delete-event', Gtk.main_quit)
 
-win.show_all()
 Gtk.main()
