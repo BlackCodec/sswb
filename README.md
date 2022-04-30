@@ -25,11 +25,17 @@ The file is a simple json with the key home and the value of your default open u
 Release: 220501.1
 
 Changes:
+
   Code rewrite and clear
+  
   Add go back, go forward and refresh button
+  
   Add url bar
+  
   Add cookies support
+  
   Add support for specify default home page
+  
 
 =====
 
@@ -37,5 +43,8 @@ Release: 221112.1
 
 Changes:
   Add support for download files
+  
   Add support for notification under gnome
+  
   Add support for F5 hotkey to refresh page
+  
