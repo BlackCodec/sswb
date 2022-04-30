@@ -1,5 +1,7 @@
 #!/usr/bin/python3
+# Release: 220501.1
 
+# Import required libraries
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
@@ -10,56 +12,94 @@ from gi.repository import WebKit2
 from gi.repository import GLib
 from gi.repository import Notify
 from gi.repository import Gdk
+from gi.repository import Soup
 
-import sys,os, urllib.request
+import sys,os, urllib.request, json
 
-# set default resolution 800x600
-defaultxres = 800
-defaultyres = 600
-
-# check syntax
-if len(sys.argv) < 2:
-  print("Usage: sswb url [title]")
-  sys.exit()
-
-# check if title is passed from command line
-if len(sys.argv) > 2:
-  start = 2
-  titolo = ""
-  while (start < len(sys.argv)):
-    titolo = titolo + str(sys.argv[start]) + " "
-    start = start + 1
-  titolo = titolo[:-1]
-else:
-  titolo = "Stupid Simply Web Browser"
-
-# read url from commandline
-url = str(sys.argv[1])
-# check if url start with something:// else add http://
-if url.find("://") <= 2:
-  url = "https://" + url
-  
-if len(sys.argv) > 2:
-	titolo = str(sys.argv[2])
+url = None
+# check if url is passed from command line
+if len(sys.argv) == 2:
+  # read url from commandline
+  url = str(sys.argv[1])
   
 class StupidSimplyWebBrowserWindow(Gtk.Window):
-  miotitolo="StupidSimplyWebBrowser"  
+  currentTitle="Stupid Simply Web Browser" 
+  # set default resolution 800x600
+  defaultXRes = 800
+  defaultYRes = 600
+  # set default url and title
+  defaultHome = "http://www.icapito.it"
+  defaultCookiesPath = '/tmp/cookies.txt'
   
-  def __init__(self, iltitolo, sizex, sizey):
-    Gtk.Window.__init__(self, title=iltitolo)
-    self.miotitolo=iltitolo
-    self.set_default_size(sizex, sizey)
+  def __init__(self, destinationUrl):
+    self.load_conf()
+    Gtk.Window.__init__(self, title=self.currentTitle)
+    self.set_default_size(self.defaultXRes, self.defaultYRes)
+    # add url editor
+    self.url_text = Gtk.Entry()
+    self.url_text.connect("activate", self.eventEnterKeyPressed)
+    # add button goBack
+    self.goback_btn = Gtk.Button()
+    self.goback_icon = Gtk.Image.new_from_icon_name("go-previous", Gtk.IconSize.SMALL_TOOLBAR)
+    self.goback_btn.add(self.goback_icon)
+    self.goback_btn.connect("clicked",self.doGoBack)
+    # add button goForward    
+    self.goforward_btn = Gtk.Button()
+    self.goforward_icon = Gtk.Image.new_from_icon_name("go-next", Gtk.IconSize.SMALL_TOOLBAR)
+    self.goforward_btn.add(self.goforward_icon)
+    self.goforward_btn.connect("clicked",self.doGoForward)
+    # add button refresh
+    self.refresh_btn = Gtk.Button()
+    self.refresh_icon = Gtk.Image.new_from_icon_name("reload", Gtk.IconSize.SMALL_TOOLBAR)
+    self.refresh_btn.add(self.refresh_icon)
+    self.refresh_btn.connect("clicked",self.doRefresh)
+    # add toolbar
+    self.toolbar = Gtk.Box(spacing=6)
+    self.toolbar.pack_start(self.goback_btn, False, True, 0)
+    self.toolbar.pack_start(self.goforward_btn, False, True, 0)
+    self.toolbar.pack_start(self.refresh_btn, False, True, 0)
+    self.toolbar.pack_start(self.url_text, True, True, 10)
+    # webview
     self.scroller = Gtk.ScrolledWindow()
-    self.web = WebKit2.WebView()
-    self.web.connect('decide-policy', self.policy_decision_requested)
-    self.web.connect('load-changed', self.loaded)
+    # cookies
+    self.context = WebKit2.WebContext.get_default()
+    self.secman = self.context.get_security_manager()
+    self.cookies = self.context.get_cookie_manager()
+    self.manager = WebKit2.UserContentManager()
+    self.storage = WebKit2.CookiePersistentStorage.TEXT
+    self.policy = WebKit2.CookieAcceptPolicy.ALWAYS
+    self.cookies.set_accept_policy(self.policy)
+    self.cookies.set_persistent_storage(self.defaultCookiesPath, self.storage)
+    self.web = WebKit2.WebView().new_with_user_content_manager(self.manager)
+    self.web.connect("decide-policy", self.policy_decision_requested)
+    self.web.connect("load-changed", self.loaded)
     self.scroller.add(self.web)
-    self.add(self.scroller)
-    self.connect('delete-event', Gtk.main_quit)
-    self.connect("key-press-event",self.premuto)
+    # vertical panel contains all
+    self.vpanel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    self.vpanel.pack_start(self.toolbar, False, True, 0)
+    self.vpanel.pack_start(self.scroller, True, True, 0)
+    self.add(self.vpanel)
+    self.connect("delete-event", Gtk.main_quit)
+    self.connect("key-press-event",self.eventKeyPressed)
     self.show_all()
+    if destinationUrl == None:
+      destinationUrl=self.defaultHome
+    self.goto(destinationUrl)
   
-  def premuto(self,widget,event):
+  def doGoBack(self, button):
+    self.web.go_back()
+
+  def doGoForward(self, button):
+    self.web.go_forward()
+
+  def doRefresh(self, button):
+    self.web.reload()
+
+  def eventEnterKeyPressed(self,textField):
+    url = textField.get_text()
+    self.goto(url)
+
+  def eventKeyPressed(self,widget,event):
     keyval = event.keyval
     keyval_name = Gdk.keyval_name(keyval)
     ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
@@ -67,27 +107,25 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
       self.web.reload()
       
   def goto(self, theurl):
+    # check if url start with something:// else add https://
+    if theurl.find("://") <= 2:
+      theurl = "https://" + theurl
     self.web.load_uri(theurl)
   
   def loaded(self, view, event):
     if event == WebKit2.LoadEvent.FINISHED:
       self.set_title(self.web.get_title())
+      self.url_text.set_text(self.web.get_uri())
   
   def policy_decision_requested(self,view, decision, decisionType):
     if decisionType == WebKit2.PolicyDecisionType.RESPONSE:
-      current_request = decision.get_request()
-      current_url = current_request.get_uri()
-      url_arr = current_url.split('/')
-      filename = url_arr[len(url_arr)-1]
-      filename_arr = filename.split('.')
-      if len(filename_arr) == 1:
+      mime_type = decision.get_response().get_mime_type()
+      if "text" in mime_type or "image" in mime_type or "video" in mime_type or "application/ogg" in mime_type:
         return
-      estensione = filename_arr[len(filename_arr)-1]
-      if current_url.endswith('.html') or current_url.endswith('.php') or current_url.endswith('.htm') or len(estensione) > 5:
-        return
-      else:
+      else: 
+        current_request = decision.get_request()
         self.download_requested(view ,current_request)
-    if decisionType == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
+    else:
       return
 
   def download_requested(self,view, download):
@@ -99,24 +137,31 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     ext = temp[len(temp)-1]
     baseName = name[0:0-len(ext)-1]
     nameKo = True
-    contatore = 0
-    Notify.init(self.miotitolo)
+    counter = 0
+    Notify.init(self.currentTitle)
     while nameKo:
-      path = os.path.join(
-        GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),
-        name
-      )
+      path = os.path.join(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),name)
       if os.path.exists(path):
-        name =  baseName + "." + str(contatore) + "." + ext
-        contatore +=1 
+        name =  baseName + "." + str(counter) + "." + ext
+        counter +=1 
       else:
         nameKo = False
-    Notify.Notification.new("Inizio download del file " + name).show()
+    Notify.Notification.new("Start download: " + name).show()
     urllib.request.urlretrieve(download.get_uri(), path)
-    Notify.Notification.new("Download completato").show()
+    Notify.Notification.new("Download completed").show()
     return False
 
-win = StupidSimplyWebBrowserWindow(titolo, defaultxres, defaultyres)
-win.goto(url)
+  def load_conf(self):
+    json_file_path = os.path.join(GLib.get_home_dir(),".config/sswb/options.json")
+    json_data = None
+    try:
+      with open(json_file_path, 'r') as config_file:
+        json_data = json.load(config_file)
+      self.defaultHome = json_data['home']
+    except:
+      return
+
+win = StupidSimplyWebBrowserWindow(url)
+win.load_conf()
 
 Gtk.main()
