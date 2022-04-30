@@ -42,9 +42,8 @@ Changes:
 Release: 221112.1
 
 Changes:
+
   Add support for download files
-  
   Add support for notification under gnome
-  
   Add support for F5 hotkey to refresh page
   
