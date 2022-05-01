@@ -20,21 +20,52 @@ You can now set your default home page by creating a configuration file in your 
 
 By default sswb use the following options.json:
 
-``{"home": "https://www.icapito.it"}``
+```
+{
+    "home": "http://www.icapito.it",
+    "resolution": "800x600",
+    "search": "https://www.google.it/search?q=%text%",
+    "cookies": "/home/black/.config/sswb/cookies.txt",
+    "mimes": [
+        "text/*",
+        "image/*",
+        "video/*",
+        "application/ogg"
+    ],
+    "bookmarks": [
+        {
+            "name": "iCapito.it",
+            "url": "https://www.icapito.it"
+        }
+    ]
+}
+```
 
 -----
 ## Release history ##
 
-*Release:* **220501.1**
+*Release:* **220501.2**
 
 *Changes:*
 
-  - Code rewrite and clear
-  - Add go back, go forward and refresh button
-  - Add url bar
-  - Add cookies support
-  - Add support for specify default home page
+  - Added support for about: home, about: blank, about: config and about: bookmarks links
+  - Added support for the search engine
+  - Added support for specifying which mime types should not be downloaded
+  - Added support for bookmarks
+  - All parameters can now be configured directly from the json configuration file in *${HOME}/.config/sswb/* , if the file does not exist it will be created with default parameters
+  - Added parallelization of download processes
   
+=====
+
+*Release:* 220501.1
+
+*Changes:*
+
+  - Code rewriting and cleaning
+  - Added go back, go forward and refresh buttons
+  - Added URL bar
+  - Added support for cookies
+  - Added support for setting the default home page
 
 =====
 
@@ -42,7 +73,8 @@ By default sswb use the following options.json:
 
 *Changes:*
 
-  - Add support for download files
-  - Add support for notification under gnome
-  - Add support for F5 hotkey to refresh page
+  - Added support for file downloads
+  - Added support for notification in gnome
+  - Added support for the F5 hotkey to refresh the page
   
+
