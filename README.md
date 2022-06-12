@@ -44,7 +44,15 @@ By default sswb use the following options.json:
 -----
 ## Release history ##
 
-*Release:* **220501.2**
+*Release:* **220612.1**
+
+*Changes:*
+
+  - Added support for local file read and show (file:// support).
+
+=====
+
+*Release:* 220501.2
 
 *Changes:*
 

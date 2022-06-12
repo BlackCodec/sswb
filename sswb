@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Release: 220501.2
+# Release: 220612.1
 
 # Import required libraries
 import gi
@@ -180,7 +180,10 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
         return
       else: 
         current_request = decision.get_request()
-        self.download_requested(view ,current_request)
+        if (current_request.get_uri().startswith('file://')):
+           return
+        else:
+          self.download_requested(view ,current_request)
     else:
       return
 
