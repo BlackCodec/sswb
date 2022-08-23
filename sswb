@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Release: 220612.1
+# Release: 220823.1
 
 # Import required libraries
 import gi
@@ -23,26 +23,17 @@ url = None
 if len(sys.argv) == 2:
   # read url from commandline
   url = str(sys.argv[1])
-  
-class StupidSimplyWebBrowserWindow(Gtk.Window):
-  currentTitle="Stupid Simply Web Browser" 
-  # set default resolution 800x600
-  defaultXRes = 800
-  defaultYRes = 600
-  # set default url and title
-  defaultHome = "http://www.icapito.it"
-  defaultSearch = "https://www.google.it/search?q=%text%"
-  defaultCookiesPath = os.path.join(GLib.get_home_dir(),".config/sswb/cookies.txt")
-  defaultBookmarks = [{'name':'iCapito.it','url':'https://www.icapito.it'}]
-  defaultMimes = ['text/*', 'image/*', 'video/*', 'application/ogg']
-  
-  def __init__(self, destinationUrl):
-    self.load_conf()
-    Gtk.Window.__init__(self, title=self.currentTitle)
-    self.set_default_size(self.defaultXRes, self.defaultYRes)
+
+
+class BrowserTab():
+
+  parent = None  
+
+  def __init__(self, browser_window):
+    self.parent = browser_window
     # add url editor
     self.url_text = Gtk.Entry()
-    self.url_text.connect("activate", self.eventEnterKeyPressed)
+    self.url_text.connect("activate", self.eventURLEnterKeyPressed)
     # add button goBack
     self.goback_btn = Gtk.Button()
     self.goback_btn.add(Gtk.Image.new_from_icon_name("go-previous", Gtk.IconSize.SMALL_TOOLBAR))
@@ -59,6 +50,14 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.home_btn = Gtk.Button()
     self.home_btn.add(Gtk.Image.new_from_icon_name("go-home", Gtk.IconSize.SMALL_TOOLBAR))
     self.home_btn.connect("clicked",self.doGoHome)
+    # add button new tab
+    self.ntab_btn = Gtk.Button()
+    self.ntab_btn.add(Gtk.Image.new_from_icon_name("tab-new",Gtk.IconSize.SMALL_TOOLBAR))
+    self.ntab_btn.connect("clicked",self.addTab)
+    # add button tabs
+    self.tabs_btn = Gtk.Button()
+    self.tabs_btn.add(Gtk.Image.new_from_icon_name("window",Gtk.IconSize.SMALL_TOOLBAR))
+    self.tabs_btn.connect("clicked",self.showTabs)
     # add button bookmarks
     self.bookm_btn = Gtk.Button()
     self.bookm_btn.add(Gtk.Image.new_from_icon_name("bookmarks",Gtk.IconSize.SMALL_TOOLBAR))
@@ -70,6 +69,8 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.toolbar.pack_start(self.refresh_btn, False, True, 0)
     self.toolbar.pack_start(self.url_text, True, True, 10)
     self.toolbar.pack_start(self.home_btn, False, True, 0)
+    self.toolbar.pack_start(self.ntab_btn, False, True, 0)
+    self.toolbar.pack_start(self.tabs_btn, False, True, 0)
     self.toolbar.pack_start(self.bookm_btn, False, True, 0)
     # webview
     self.scroller = Gtk.ScrolledWindow()
@@ -81,7 +82,7 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.storage = WebKit2.CookiePersistentStorage.TEXT
     self.policy = WebKit2.CookieAcceptPolicy.ALWAYS
     self.cookies.set_accept_policy(self.policy)
-    self.cookies.set_persistent_storage(self.defaultCookiesPath, self.storage)
+    self.cookies.set_persistent_storage(self.parent.cookies_path, self.storage)
     self.web = WebKit2.WebView().new_with_user_content_manager(self.manager)
     self.web.connect("decide-policy", self.policy_decision_requested)
     self.web.connect("load-changed", self.loaded)
@@ -90,13 +91,9 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.vpanel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     self.vpanel.pack_start(self.toolbar, False, True, 0)
     self.vpanel.pack_start(self.scroller, True, True, 0)
-    self.add(self.vpanel)
-    self.connect("delete-event", Gtk.main_quit)
-    self.connect("key-press-event",self.eventKeyPressed)
-    self.show_all()
-    if destinationUrl == None:
-      destinationUrl=self.defaultHome
-    self.goto(destinationUrl)
+  
+  def get(self):
+    return self.vpanel
   
   def doGoBack(self, button):
     self.web.go_back()
@@ -108,36 +105,39 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     self.web.reload()
 
   def doGoHome(self, button):
-    self.goto(self.defaultHome)
+    self.goto(self.parent.browser_home)
+
+  def addTab(self,button):
+    self.parent.remove(self.vpanel)
+    self.parent.addTab(None)
+
+  def showTabs(self,button):
+    self.parent.showPopupMenu()
 
   def showBookmarks(self, button):
-    htmlString = '<html><head><title>Bookmarks</title><body><i>To edit this list modify the file options.json in ~/.config/sswb directory</i><hr>'
-    for record in self.defaultBookmarks:
+    htmlString = '<html><head><title>Bookmarks</title><body><i>To edit this list modify the file options.json in ~/' + self.parent.config_path+' directory</i><hr>'
+    for record in self.parent.bookmarks:
       htmlString += '<p><b><a href="' + record['url'] + '">' + record['name'] + '</a></b>&nbsp;:&nbsp;<a href="' + record['url'] +'">'+ record['url']+'</a></p>'
     htmlString += '</body></html>'
     self.web.load_html(htmlString,'about:bookmarks')
 
   def showConfig(self):
     htmlString = '<html><head><title>Options</title><body><h3>To change this options edit the file options.json in ~/.config/sswb directory</h3><br><hr><br>'
-    htmlString += '<p><b>Homepage</b>&nbsp;:&nbsp;' + self.defaultHome +'</p>'
-    htmlString += '<p><b>Search</b>&nbsp;:&nbsp;' + self.defaultSearch +'</p>'
-    htmlString += '<p><b>Resolution</b>&nbsp;:&nbsp;' + str(self.defaultXRes) +'x'+str(self.defaultYRes) +'</p>'
-    htmlString += '<p><b>Cookies</b>&nbsp;:&nbsp;' + self.defaultCookiesPath + '</p>'
-    htmlString += '<p><b>Mimes</b>&nbsp;:&nbsp;' + ','.join([str(mime) for mime in self.defaultMimes]) + '</p>'
+    htmlString += '<p><b>Homepage</b>&nbsp;:&nbsp;' + self.parent.browser_home +'</p>'
+    htmlString += '<p><b>Search</b>&nbsp;:&nbsp;' + self.parent.browser_search +'</p>'
+    htmlString += '<p><b>Resolution</b>&nbsp;:&nbsp;' + str(self.parent.x_res) +'x'+str(self.parent.y_res) +'</p>'
+    htmlString += '<p><b>Cookies</b>&nbsp;:&nbsp;' + self.parent.cookies_path + '</p>'
+    htmlString += '<p><b>Mimes</b>&nbsp;:&nbsp;' + ','.join([str(mime) for mime in self.parent.mimes]) + '</p>'
     htmlString += '</body></html>'
     self.web.load_html(htmlString,'about:config')
 
-  def eventEnterKeyPressed(self,textField):
+  def eventURLEnterKeyPressed(self,textField):
     url = textField.get_text()
     self.goto(url)
 
-  def eventKeyPressed(self,widget,event):
-    keyval = event.keyval
-    keyval_name = Gdk.keyval_name(keyval)
-    ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
-    if keyval_name == "F5":
-      self.web.reload()
-      
+  def refresh(self):
+    self.web.reload()
+
   def goto(self, theurl):
     if theurl.startswith('about:') :
       if theurl == 'about:config':
@@ -159,31 +159,39 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
       # check if url start with something:// else add https://
       if theurl.find("://") <= 2:
         if ' ' in theurl or not '.' in theurl:
-          theurl=self.defaultSearch.replace('%text%',theurl.replace(' ','%20'))
+          theurl=self.parent.browser_search.replace('%text%',theurl.replace(' ','%20'))
         else:
           theurl = "https://" + theurl
       self.web.load_uri(theurl)
   
+  def getTitle(self):
+    if self.web.get_title() == None or self.web.get_title() == '':
+      the_url = self.web.get_uri()
+      if the_url.find("://") > 2:
+        the_url = the_url.split("://", 1)[1]
+      the_url = the_url.split("/",1)[0]
+      the_url = the_url.replace("www.","")
+      return the_url
+    else:
+      return self.web.get_title()
+
   def loaded(self, view, event):
     if event == WebKit2.LoadEvent.FINISHED:
       if self.web.get_title() == None or self.web.get_title() == '':
-        self.set_title("Stupid Simply Web Browser")
+        self.parent.set_title(self.parent.browser_title)
       else: 
-        self.set_title(self.web.get_title())        
+        self.parent.set_title(self.web.get_title())        
       self.url_text.set_text(self.web.get_uri())
   
   def policy_decision_requested(self,view, decision, decisionType):
     if decisionType == WebKit2.PolicyDecisionType.RESPONSE:
       mime_type_str = decision.get_response().get_mime_type()
       mime_type_arr = mime_type_str.split("/")
-      if mime_type_str in self.defaultMimes or mime_type_arr[0]+'/*' in self.defaultMimes or '*/' + mime_type_arr[1] in self.defaultMimes:
+      if mime_type_str in self.parent.mimes or mime_type_arr[0]+'/*' in self.parent.mimes or '*/' + mime_type_arr[1] in self.parent.mimes:
         return
       else: 
         current_request = decision.get_request()
-        if (current_request.get_uri().startswith('file://')):
-           return
-        else:
-          self.download_requested(view ,current_request)
+        self.download_requested(view ,current_request)
     else:
       return
 
@@ -197,7 +205,7 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     baseName = name[0:0-len(ext)-1]
     nameKo = True
     counter = 0
-    Notify.init(self.currentTitle)
+    Notify.init(self.getTitle())
     while nameKo:
       path = os.path.join(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),name)
       tpath = os.path.join(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),name +'.tmp')
@@ -215,8 +223,92 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
     os.rename(temp_name,final_name)
     Notify.Notification.new("Download completed: " + name).show()
 
+  
+  
+class BrowserWindow(Gtk.Window):
+  config_path=".config/sswb/"
+  browser_title="Stupid Simply Web Browser" 
+  # set default resolution 800x600
+  x_res = 800
+  y_res = 600
+  # set default url and title
+  browser_home = "http://www.icapito.it"
+  browser_search = "https://www.google.it/search?q=%text%"
+  cookies_path = os.path.join(GLib.get_home_dir(),".config/sswb/cookies.txt")
+  bookmarks = [{'name':'iCapito.it','url':'https://www.icapito.it'}]
+  mimes = ['text/*', 'image/*', 'video/*', 'application/ogg', 'application/xml']
+  tabs = [];
+  active_tab_id = None;
+  active_tab_obj = None;
+  
+  def __init__(self, destination_url):
+    self.load_conf()
+    Gtk.Window.__init__(self, title=self.browser_title)
+    self.set_default_size(self.x_res, self.y_res)
+    self.connect("delete-event", Gtk.main_quit)
+    self.connect("key-press-event",self.eventKeyPressed)
+    self.addTab(destination_url)
+    
+  def addTab(self,destination_url):
+    tab = BrowserTab(self)
+    self.active_tab_obj = tab;
+    self.tabs.append(tab)
+    self.active_tab_id = len(self.tabs)
+    self.add(tab.get())
+    if destination_url == None:
+      destination_url=self.browser_home
+    self.active_tab_obj.goto(destination_url)
+    self.set_title(self.active_tab_obj.getTitle())
+    self.show_all()
+    
+  def prevTab(self):
+    if len(self.tabs) <= 1:
+      return
+    nextid = self.active_tab_id - 1
+    if nextid > len(self.tabs) or nextid < 1:
+      nextid = len(self.tabs)
+    self.showTab(nextid)
+
+  def nextTab(self):
+    if len(self.tabs) <= 1:
+      return
+    nextid = self.active_tab_id + 1
+    if nextid > len(self.tabs):
+      nextid = 1
+    self.showTab(nextid)
+    
+  def showTab(self,tabid):
+    self.remove(self.active_tab_obj.get())
+    self.active_tab_id = tabid
+    self.active_tab_obj = self.tabs[tabid-1]
+    self.add(self.active_tab_obj.get())
+    self.set_title(self.active_tab_obj.getTitle())
+    self.show_all()
+
+  def loadFromMenu(self, widget,id):
+    self.showTab(id)
+
+  def showPopupMenu(self):
+    menu = Gtk.Menu()
+    count = 1
+    for tab in self.tabs:
+      elem = Gtk.MenuItem(tab.getTitle())
+      elem.connect("activate",self.loadFromMenu, count)
+      menu.append(elem)
+      count = count + 1
+    menu.show_all()
+    menu.popup(None, None, None,None, 0, Gtk.get_current_event_time())
+
+  def eventKeyPressed(self,widget,event):
+    keyval = event.keyval
+    keyval_name = Gdk.keyval_name(keyval)
+    ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+    if keyval_name == "F5":
+      self.active_tab_obj.refresh()
+      
   def load_conf(self):
-    json_file_path = os.path.join(GLib.get_home_dir(),".config/sswb/options.json")
+    json_dir_path = os.path.join(GLib.get_home_dir(),self.config_path)
+    json_file_path = os.path.join(json_dir_path,"options.json")
     if not os.path.isfile(json_file_path):
       self.save_conf()
     json_data = None
@@ -224,32 +316,32 @@ class StupidSimplyWebBrowserWindow(Gtk.Window):
       with open(json_file_path, 'r') as config_file:
         json_data = json.load(config_file)
       if 'home' in json_data:
-        self.defaultHome = json_data['home']
+        self.browser_home = json_data['home']
       if 'resolution' in json_data:
         readResolution = json_data['resolution'].split("x")
-        self.defaultXRes = int(readResolution[0])
-        self.defaultYRes = int(readResolution[1])
+        self.x_res = int(readResolution[0])
+        self.y_res = int(readResolution[1])
       if 'search' in json_data:
-        self.defaultSearch = json_data['search']
+        self.browser_search = json_data['search']
       if 'cookies' in json_data:
-        self.defaultCookiesPath = json_data['cookies']
+        self.cookies_path = json_data['cookies']
       if 'bookmarks' in json_data:
-        self.defaultBookmarks = json_data['bookmarks']
+        self.bookmarks = json_data['bookmarks']
       if 'mimes' in json_data:
-        self.defaultMimes = json_data['mimes']
+        self.mimes = json_data['mimes']
     except:
       return
   
   def save_conf(self):
-    default_confs = {'home':self.defaultHome,'resolution': str(self.defaultXRes) +'x'+str(self.defaultYRes), 'search': self.defaultSearch, 'cookies': self.defaultCookiesPath, 'mimes': self.defaultMimes, 'bookmarks' : self.defaultBookmarks }
-    json_dir_path = os.path.join(GLib.get_home_dir(),".config/sswb/")
+    default_confs = {'home':self.browser_home,'resolution': str(self.x_res) +'x'+str(self.y_res), 'search': self.browser_search, 'cookies': self.cookies_path, 'mimes': self.mimes, 'bookmarks' : self.bookmarks }
+    json_dir_path = os.path.join(GLib.get_home_dir(),self.config_path)
     if not os.path.exists(json_dir_path):
       os.makedirs(json_dir_path)
-    json_file_path = os.path.join(GLib.get_home_dir(),".config/sswb/options.json")
+    json_file_path = os.path.join(json_dir_path,"options.json")
     with open(json_file_path, "w") as outfile:
       outfile.write(json.dumps(default_confs, indent=4))
     
-win = StupidSimplyWebBrowserWindow(url)
+win = BrowserWindow(url)
 win.load_conf()
 
 Gtk.main()
