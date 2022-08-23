@@ -1,4 +1,4 @@
-# sswb # - Development branch
+# sswb - Development branch #
 ====
 
 **S**tupid **S**imply **W**eb **B**rowser - A simply gtk web browser
