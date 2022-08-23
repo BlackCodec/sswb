@@ -1,4 +1,4 @@
-# sswb #
+# sswb # - Development branch
 ====
 
 **S**tupid **S**imply **W**eb **B**rowser - A simply gtk web browser
@@ -44,7 +44,15 @@ By default sswb use the following options.json:
 -----
 ## Release history ##
 
-*Release:* **220612.1**
+*Release:* **220823.1**
+
+*Changes:*
+
+  - Added support for tabs.
+
+=====
+
+*Release:* 220612.1
 
 *Changes:*
 
