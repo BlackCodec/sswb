@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Release: 220823.1
+# Release: 221207.1
 
 # Import required libraries
 import gi
@@ -86,6 +86,7 @@ class BrowserTab():
     self.web = WebKit2.WebView().new_with_user_content_manager(self.manager)
     self.web.connect("decide-policy", self.policy_decision_requested)
     self.web.connect("load-changed", self.loaded)
+    self.web.connect("create", self.opentab)
     self.scroller.add(self.web)
     # vertical panel contains all
     self.vpanel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -106,6 +107,10 @@ class BrowserTab():
 
   def doGoHome(self, button):
     self.goto(self.parent.browser_home)
+
+  def opentab(self, view, action):
+    self.parent.remove(self.vpanel)
+    self.parent.addTab(action.get_request().get_uri());
 
   def addTab(self,button):
     self.parent.remove(self.vpanel)

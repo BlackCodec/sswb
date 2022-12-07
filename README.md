@@ -44,7 +44,15 @@ By default sswb use the following options.json:
 -----
 ## Release history ##
 
-*Release:* **220823.1**
+*Release:* **221207.1**
+
+*Changes:*
+
+  - Added support for open in a new tab.
+
+=====
+
+*Release:* 220823.1
 
 *Changes:*
 
