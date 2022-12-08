@@ -3,6 +3,7 @@
 
 **S**tupid **S**imply **W**eb **B**rowser - A simply gtk web browser
 
+*Latest development release: 221208.1*
 
 -----
 ## How to start ##
@@ -22,10 +23,10 @@ By default sswb use the following options.json:
 
 ```
 {
-    "home": "http://www.icapito.it",
+    "home": "https://www.icapito.it",
     "resolution": "800x600",
     "search": "https://www.google.it/search?q=%text%",
-    "cookies": "/home/black/.config/sswb/cookies.txt",
+    "cookies": "~/.config/sswb/cookies.txt",
     "mimes": [
         "text/*",
         "image/*",
@@ -37,14 +38,42 @@ By default sswb use the following options.json:
             "name": "iCapito.it",
             "url": "https://www.icapito.it"
         }
-    ]
+    ],
+    "history": [
+        "icapito.it"
+    ],
+    "icons": {
+        "prev": "go-previous",
+        "next": "go-next",
+        "refresh": "reload",
+        "close": "close",
+        "home": "go-home",
+        "newtab": "tab-new",
+        "tablist": "window",
+        "bookmarks": "bookmarks"
+    },
+    "full-url-history": false,
+    "enable-history": true
 }
 ```
 
 -----
 ## Release history ##
 
-*Release:* **221207.1**
+*Release:* **221208.1**
+
+*Changes:*
+
+  - Added a file with default configuration paramters as an example.
+  - Added close tab button.
+  - Added button icon theme in options file.
+  - Added autocompletion (called history, can be disabled) and the ability to collect only domains or full url.
+  - Added capability to clear history and cookies with clear:history and clear:cookies urls.
+  - Added help url: about:help
+
+=====
+
+*Release:* 221207.1
 
 *Changes:*
 
@@ -72,12 +101,12 @@ By default sswb use the following options.json:
 
 *Changes:*
 
-  - Added support for about: home, about: blank, about: config and about: bookmarks links
-  - Added support for the search engine
-  - Added support for specifying which mime types should not be downloaded
-  - Added support for bookmarks
-  - All parameters can now be configured directly from the json configuration file in *${HOME}/.config/sswb/* , if the file does not exist it will be created with default parameters
-  - Added parallelization of download processes
+  - Added support for about: home, about: blank, about: config and about: bookmarks links.
+  - Added support for the search engine.
+  - Added support for specifying which mime types should not be downloaded.
+  - Added support for bookmarks.
+  - All parameters can now be configured directly from the json configuration file in *${HOME}/.config/sswb/* , if the file does not exist it will be created with default parameters.
+  - Added parallelization of download processes.
   
 =====
 
@@ -85,11 +114,11 @@ By default sswb use the following options.json:
 
 *Changes:*
 
-  - Code rewriting and cleaning
-  - Added go back, go forward and refresh buttons
-  - Added URL bar
-  - Added support for cookies
-  - Added support for setting the default home page
+  - Code rewriting and cleaning.
+  - Added go back, go forward and refresh buttons.
+  - Added URL bar.
+  - Added support for cookies.
+  - Added support for setting the default home page.
 
 =====
 
@@ -97,8 +126,8 @@ By default sswb use the following options.json:
 
 *Changes:*
 
-  - Added support for file downloads
-  - Added support for notification in gnome
-  - Added support for the F5 hotkey to refresh the page
+  - Added support for file downloads.
+  - Added support for notification in gnome.
+  - Added support for the F5 hotkey to refresh the page.
   
 

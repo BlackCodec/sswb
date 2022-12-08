@@ -1,0 +1,32 @@
+{
+    "home": "https://www.icapito.it",
+    "resolution": "800x600",
+    "search": "https://www.google.it/search?q=%text%",
+    "mimes": [
+        "text/*",
+        "image/*",
+        "video/*",
+        "application/ogg"
+    ],
+    "bookmarks": [
+        {
+            "name": "iCapito.it",
+            "url": "https://www.icapito.it"
+        }
+    ],
+    "history": [
+        "icapito.it"
+    ],
+    "icons": {
+        "prev": "go-previous",
+        "next": "go-next",
+        "refresh": "reload",
+        "close": "close",
+        "home": "go-home",
+        "newtab": "tab-new",
+        "tablist": "window",
+        "bookmarks": "bookmarks"
+    },
+    "full-url-history": false,
+    "enable-history": true
+}

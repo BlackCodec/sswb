@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Release: 221207.1
+# Release: 221208.1
 
 # Import required libraries
 import gi
@@ -34,40 +34,47 @@ class BrowserTab():
     # add url editor
     self.url_text = Gtk.Entry()
     self.url_text.connect("activate", self.eventURLEnterKeyPressed)
+    self.url_text.set_completion(self.parent.completion)
+    self.url_text.emit('changed')
     # add button goBack
     self.goback_btn = Gtk.Button()
-    self.goback_btn.add(Gtk.Image.new_from_icon_name("go-previous", Gtk.IconSize.SMALL_TOOLBAR))
+    self.goback_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["prev"], Gtk.IconSize.SMALL_TOOLBAR))
     self.goback_btn.connect("clicked",self.doGoBack)
     # add button goForward    
     self.goforward_btn = Gtk.Button()
-    self.goforward_btn.add(Gtk.Image.new_from_icon_name("go-next", Gtk.IconSize.SMALL_TOOLBAR))
+    self.goforward_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["next"], Gtk.IconSize.SMALL_TOOLBAR))
     self.goforward_btn.connect("clicked",self.doGoForward)
     # add button refresh
     self.refresh_btn = Gtk.Button()
-    self.refresh_btn.add(Gtk.Image.new_from_icon_name("reload", Gtk.IconSize.SMALL_TOOLBAR))
+    self.refresh_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["refresh"], Gtk.IconSize.SMALL_TOOLBAR))
     self.refresh_btn.connect("clicked",self.doRefresh)
+    # add button close
+    self.close_btn = Gtk.Button()
+    self.close_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["close"], Gtk.IconSize.SMALL_TOOLBAR))
+    self.close_btn.connect("clicked",self.closeTab)
     # add button go home
     self.home_btn = Gtk.Button()
-    self.home_btn.add(Gtk.Image.new_from_icon_name("go-home", Gtk.IconSize.SMALL_TOOLBAR))
+    self.home_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["home"], Gtk.IconSize.SMALL_TOOLBAR))
     self.home_btn.connect("clicked",self.doGoHome)
     # add button new tab
     self.ntab_btn = Gtk.Button()
-    self.ntab_btn.add(Gtk.Image.new_from_icon_name("tab-new",Gtk.IconSize.SMALL_TOOLBAR))
+    self.ntab_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["newtab"],Gtk.IconSize.SMALL_TOOLBAR))
     self.ntab_btn.connect("clicked",self.addTab)
     # add button tabs
     self.tabs_btn = Gtk.Button()
-    self.tabs_btn.add(Gtk.Image.new_from_icon_name("window",Gtk.IconSize.SMALL_TOOLBAR))
+    self.tabs_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["tablist"],Gtk.IconSize.SMALL_TOOLBAR))
     self.tabs_btn.connect("clicked",self.showTabs)
     # add button bookmarks
     self.bookm_btn = Gtk.Button()
-    self.bookm_btn.add(Gtk.Image.new_from_icon_name("bookmarks",Gtk.IconSize.SMALL_TOOLBAR))
+    self.bookm_btn.add(Gtk.Image.new_from_icon_name(self.parent.icons["bookmarks"],Gtk.IconSize.SMALL_TOOLBAR))
     self.bookm_btn.connect("clicked",self.showBookmarks)
     # add toolbar
     self.toolbar = Gtk.Box(spacing=6)
     self.toolbar.pack_start(self.goback_btn, False, True, 0)
     self.toolbar.pack_start(self.goforward_btn, False, True, 0)
     self.toolbar.pack_start(self.refresh_btn, False, True, 0)
-    self.toolbar.pack_start(self.url_text, True, True, 10)
+    self.toolbar.pack_start(self.url_text, True, True, 0)
+    self.toolbar.pack_start(self.close_btn, False, True, 0)
     self.toolbar.pack_start(self.home_btn, False, True, 0)
     self.toolbar.pack_start(self.ntab_btn, False, True, 0)
     self.toolbar.pack_start(self.tabs_btn, False, True, 0)
@@ -86,7 +93,7 @@ class BrowserTab():
     self.web = WebKit2.WebView().new_with_user_content_manager(self.manager)
     self.web.connect("decide-policy", self.policy_decision_requested)
     self.web.connect("load-changed", self.loaded)
-    self.web.connect("create", self.opentab)
+    self.web.connect("create", self.openTab)
     self.scroller.add(self.web)
     # vertical panel contains all
     self.vpanel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -108,9 +115,12 @@ class BrowserTab():
   def doGoHome(self, button):
     self.goto(self.parent.browser_home)
 
-  def opentab(self, view, action):
+  def closeTab(self, button):
+    self.parent.closeTab()
+
+  def openTab(self, view, action):
     self.parent.remove(self.vpanel)
-    self.parent.addTab(action.get_request().get_uri());
+    self.parent.addTab(action.get_request().get_uri())
 
   def addTab(self,button):
     self.parent.remove(self.vpanel)
@@ -132,9 +142,34 @@ class BrowserTab():
     htmlString += '<p><b>Search</b>&nbsp;:&nbsp;' + self.parent.browser_search +'</p>'
     htmlString += '<p><b>Resolution</b>&nbsp;:&nbsp;' + str(self.parent.x_res) +'x'+str(self.parent.y_res) +'</p>'
     htmlString += '<p><b>Cookies</b>&nbsp;:&nbsp;' + self.parent.cookies_path + '</p>'
+    htmlString += '<p><b>History enabled</b>&nbsp;:&nbsp;' + str(self.parent.enable_history) + '</p>'
+    htmlString += '<p><b>History use only domains</b>&nbsp;:&nbsp;' + str( not self.parent.fullurlhistory) + '</p>'
     htmlString += '<p><b>Mimes</b>&nbsp;:&nbsp;' + ','.join([str(mime) for mime in self.parent.mimes]) + '</p>'
+    htmlString += '<p><b>Icons</b>&nbsp;:&nbsp;<br>'
+    for icon in self.parent.icons:
+      htmlString += '&nbsp;&nbsp;' + icon + "=" + self.parent.icons[icon] + "<br>"
+    htmlString += "</p>"
     htmlString += '</body></html>'
     self.web.load_html(htmlString,'about:config')
+
+  def showHelp(self):
+    htmlString = '<html><head><title>Help</title><body><h3>List of useful urls:</h3><br><hr><br><ul>'
+    htmlString += '<li><b>Homepage</b>&nbsp;:&nbsp;about:home</li>'
+    htmlString += '<li><b>Show configurations</b>&nbsp;:&nbsp;about:config</li>'
+    htmlString += '<li><b>Empty page</b>&nbsp;:&nbsp;about:blank</li>'
+    htmlString += '<li><b>History</b>&nbsp;:&nbsp;about:history</li>'
+    htmlString += '<li><b>Clear history</b>&nbsp;:&nbsp;clear:history</li>'
+    htmlString += '<li><b>Clear cookies</b>&nbsp;:&nbsp;clear:cookies</li>'
+    htmlString += '<li><b>Show help</b>&nbsp;:&nbsp;about:help</li>'
+    htmlString += '</ul></body></html>'
+    self.web.load_html(htmlString,'about:help')
+
+  def showHistory(self):
+    htmlString = '<html><head><title>Help</title><body><h3>Use only domain: ' + ('False' if self.parent.fullurlhistory else 'True') + ' </h3><br><hr><br><ul>'
+    for site in self.parent.history:
+      htmlString += '<li>'+site+'</li>'
+    htmlString += '</ul></body></html>'
+    self.web.load_html(htmlString,'about:history')
 
   def eventURLEnterKeyPressed(self,textField):
     url = textField.get_text()
@@ -152,14 +187,29 @@ class BrowserTab():
           self.showBookmarks(None)
           return
       elif theurl == 'about:home':
-          self.goto(self.defaultHome)
+          self.goto(self.parent.browser_home)
           return
       elif theurl == 'about:blank':
         htmlString = '<html><body></body></html>'
         self.web.load_html(htmlString,theurl)
+      elif theurl == 'about:help':
+        self.showHelp()
+        return
+      elif theurl == 'about:history':
+        self.showHistory()
+        return
       else:
         htmlString = '<html><head><title>Error</title></head><body>Unknown command</body></html>'
         self.web.load_html(htmlString,theurl)
+    elif theurl.startswith('clear:') :
+      if theurl == 'clear:history':
+        self.parent.history = []
+        self.parent.listUrl = []
+        self.parent.save_conf()
+        self.goto('about:history')
+      elif theurl == 'clear:cookies':
+        self.web.get_website_data_manager().clear(WebKit2.WebsiteDataTypes.COOKIES,0,None,None,None)
+        self.goto('about:home')
     else:
       # check if url start with something:// else add https://
       if theurl.find("://") <= 2:
@@ -187,6 +237,7 @@ class BrowserTab():
       else: 
         self.parent.set_title(self.web.get_title())        
       self.url_text.set_text(self.web.get_uri())
+      self.parent.add_history(self.web.get_uri())
   
   def policy_decision_requested(self,view, decision, decisionType):
     if decisionType == WebKit2.PolicyDecisionType.RESPONSE:
@@ -237,14 +288,20 @@ class BrowserWindow(Gtk.Window):
   x_res = 800
   y_res = 600
   # set default url and title
-  browser_home = "http://www.icapito.it"
+  browser_home = "https://www.icapito.it"
   browser_search = "https://www.google.it/search?q=%text%"
   cookies_path = os.path.join(GLib.get_home_dir(),".config/sswb/cookies.txt")
   bookmarks = [{'name':'iCapito.it','url':'https://www.icapito.it'}]
   mimes = ['text/*', 'image/*', 'video/*', 'application/ogg', 'application/xml']
   tabs = [];
+  listUrl = None
+  completion = None
+  history = ['www.icapito.it'];
   active_tab_id = None;
   active_tab_obj = None;
+  icons = None;
+  fullurlhistory=True;
+  enable_history=True;
   
   def __init__(self, destination_url):
     self.load_conf()
@@ -252,8 +309,15 @@ class BrowserWindow(Gtk.Window):
     self.set_default_size(self.x_res, self.y_res)
     self.connect("delete-event", Gtk.main_quit)
     self.connect("key-press-event",self.eventKeyPressed)
+    self.listUrl = Gtk.ListStore(str)
+    self.completion = Gtk.EntryCompletion()
+    self.completion.set_model(self.listUrl)
+    self.completion.set_text_column(0)
+    for hurl in self.history:
+      self.listUrl.append([hurl])
     self.addTab(destination_url)
-    
+    self.completion.complete()
+  
   def addTab(self,destination_url):
     tab = BrowserTab(self)
     self.active_tab_obj = tab;
@@ -273,6 +337,18 @@ class BrowserWindow(Gtk.Window):
     if nextid > len(self.tabs) or nextid < 1:
       nextid = len(self.tabs)
     self.showTab(nextid)
+
+  def closeTab(self):
+    tabobj = self.active_tab_obj.get()
+    if len(self.tabs) <= 1:
+      tabobj.goto("about:home")
+    closeid = self.active_tab_id
+    nextid = self.active_tab_id + 1
+    if nextid > len(self.tabs):
+      nextid = 1
+    self.showTab(nextid)
+    self.tabs.pop(closeid-1)
+    tabobj.destroy()
 
   def nextTab(self):
     if len(self.tabs) <= 1:
@@ -297,7 +373,7 @@ class BrowserWindow(Gtk.Window):
     menu = Gtk.Menu()
     count = 1
     for tab in self.tabs:
-      elem = Gtk.MenuItem(tab.getTitle())
+      elem = Gtk.MenuItem(label=tab.getTitle())
       elem.connect("activate",self.loadFromMenu, count)
       menu.append(elem)
       count = count + 1
@@ -332,13 +408,44 @@ class BrowserWindow(Gtk.Window):
         self.cookies_path = json_data['cookies']
       if 'bookmarks' in json_data:
         self.bookmarks = json_data['bookmarks']
+      if 'history' in json_data:
+        self.history = json_data['history']
       if 'mimes' in json_data:
         self.mimes = json_data['mimes']
+      if 'icons' in json_data:
+        self.icons = json_data['icons']
+      if 'full-url-history' in json_data:
+        self.fullurlhistory = json_data['full-url-history']
+      if 'enable-history' in json_data:
+        self.enable_history = json_data['enable-history']
     except:
       return
   
+  def add_history(self,url):
+     if not self.enable_history:
+       return
+     # to lower case
+     clean_url = url.lower()
+     if clean_url.startswith('about:') or clean_url.startswith('clear:'):
+       return
+     # remove protocoll
+     if '://' in clean_url:
+       clean_url = url.split("://")[1]
+     # remove last slash
+     if clean_url[-1] == '/':
+       clean_url = clean_url[:-1]
+     # remove www
+     if clean_url.startswith('www.'):
+        clean_url = clean_url[4:]
+     if not self.fullurlhistory:
+        clean_url = clean_url.split("/")[0]
+     if clean_url not in self.history:
+       self.listUrl.append([clean_url])
+       self.history.append(clean_url)
+       self.save_conf()
+
   def save_conf(self):
-    default_confs = {'home':self.browser_home,'resolution': str(self.x_res) +'x'+str(self.y_res), 'search': self.browser_search, 'cookies': self.cookies_path, 'mimes': self.mimes, 'bookmarks' : self.bookmarks }
+    default_confs = {'home':self.browser_home,'resolution': str(self.x_res) +'x'+str(self.y_res), 'search': self.browser_search, 'cookies': self.cookies_path, 'mimes': self.mimes, 'bookmarks' : self.bookmarks, 'history' : self.history, 'icons': self.icons, 'full-url-history':self.fullurlhistory, 'enable-history':self.enable_history }
     json_dir_path = os.path.join(GLib.get_home_dir(),self.config_path)
     if not os.path.exists(json_dir_path):
       os.makedirs(json_dir_path)
